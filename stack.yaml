@@ -6,12 +6,12 @@ resolver: lts-5.3
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- './partage'
+# - './partage'
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
   - polysoup-0.6.2
-  - data-partition-0.3.0.0
+  # - data-partition-0.3.0.0
   # - dawg-ord-0.5.0.1
   # - partage-0.1.0.0
 
