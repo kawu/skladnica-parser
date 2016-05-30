@@ -12,7 +12,7 @@ module NLP.Skladnica
 (
 -- * Types
   NID
-, IsHead
+, IsHead (..)
 , Node (..)
 , NonTerm (..)
 , Term (..)
@@ -196,7 +196,7 @@ parseTop =
     F.concat . evalP topP . parseForest . TagSoup.parseTags
 
 
--- | Read a Skladnica XML file and parser it into a sequence of `Node`s.
+-- | Read a Skladnica XML file and parse it into a sequence of `Node`s.
 readTop :: FilePath -> IO [Node]
 readTop path = parseTop <$> L.readFile path
 
