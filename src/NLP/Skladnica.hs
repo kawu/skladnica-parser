@@ -3,6 +3,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections      #-}
 {-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE DeriveFunctor      #-}
 
 
 -- | Parsing the Skladnica constituency treebank.
@@ -25,6 +26,7 @@ module NLP.Skladnica
 -- ** Tree
 , Tree (..)
 , simplify
+, drawTree
 , mapFst
 -- ** DAG
 , DAG
@@ -210,7 +212,7 @@ readTop path = parseTop <$> L.readFile path
 data Tree a b = Tree
   { rootLabel :: a
   , subForest :: [(Tree a b, b)] }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Functor)
 
 
 -- | Map a function over labels attached to tree nodes.
@@ -223,6 +225,24 @@ mapFst f t = Tree
 -- | Simplify a tree to a regular rose tree (i.e., from the containers package).
 simplify :: Tree a b -> R.Tree a
 simplify Tree{..} = R.Node rootLabel $ map (simplify . fst) subForest
+
+
+-- | Draw the tree.
+drawTree :: Tree String String -> String
+drawTree = unlines . treeLines
+
+
+-- | Draw tree lines.
+treeLines :: Tree String String -> [String]
+treeLines Tree{..} =
+  rootLabel : concat
+    [ map indent
+        (header y $ treeLines child)
+    | (child, y) <- subForest ]
+  where
+    header h (x : xs) = ("[" ++ h ++ "] " ++ x) : xs
+    header h [] = ["[" ++ h ++ "]"]
+    indent = ("  " ++)
 
 
 -- | Purge the nodes which satisfy the predicate.
