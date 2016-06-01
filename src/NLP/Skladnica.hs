@@ -15,6 +15,7 @@ module NLP.Skladnica
   NID
 , IsHead (..)
 , Node (..)
+, Label
 , NonTerm (..)
 , Term (..)
 
@@ -25,9 +26,10 @@ module NLP.Skladnica
 -- * Conversion
 -- ** Tree
 , Tree (..)
-, simplify
-, drawTree
 , mapFst
+, simplify
+, purge
+, drawTree
 -- ** DAG
 , DAG
 , mkDAG
@@ -246,10 +248,10 @@ treeLines Tree{..} =
 
 
 -- | Purge the nodes which satisfy the predicate.
-_purge :: (a -> Bool) -> R.Tree a -> R.Forest a
-_purge p t =
+purge :: (a -> Bool) -> R.Tree a -> R.Forest a
+purge p t =
   let x = R.rootLabel t
-      ts = concatMap (_purge p) (R.subForest t)
+      ts = concatMap (purge p) (R.subForest t)
   in case p x of
     True  -> ts
     False -> [R.Node x ts]
