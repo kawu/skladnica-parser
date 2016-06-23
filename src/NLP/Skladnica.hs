@@ -47,6 +47,8 @@ import           Control.Monad              (guard)
 import qualified Data.Foldable              as F
 import qualified Data.Map.Strict            as M
 import           Data.Maybe                 (maybeToList)
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
 import qualified Data.Text.Lazy             as L
 import qualified Data.Text.Lazy.IO          as L
 import qualified Data.Tree                  as R
@@ -64,10 +66,6 @@ import qualified Text.XML.PolySoup          as PolySoup
 -- | Parsing predicates.
 type P a = PolySoup.P (XmlTree L.Text) a
 type Q a = PolySoup.Q (XmlTree L.Text) a
-
-
--- -- | The analysed text.
--- type Text = L.Text
 
 
 -- | Node ID.
@@ -96,17 +94,17 @@ data Node = Node
 
 -- | Non-terminal
 data NonTerm = NonTerm
-  { cat   :: L.Text
+  { cat   :: Text
   -- ^ Category
-  , morph :: M.Map L.Text L.Text
+  , morph :: M.Map Text Text
   } deriving (Show, Eq, Ord)
 
 
 -- | Terminal
 data Term = Term
-  { orth :: L.Text
-  , base :: L.Text
-  , tag  :: L.Text
+  { orth :: Text
+  , base :: Text
+  , tag  :: Text
   } deriving (Show, Eq, Ord)
 
 
@@ -161,8 +159,10 @@ nonTermQ = named "nonterminal" `joinR` do
   mor_ <- every' $ (named "f" *> attr "type") `join`
     \typ -> ((typ,) <$> first (node text))
   return $ NonTerm
-    { cat = cat_
-    , morph = M.fromList mor_ }
+    { cat = L.toStrict cat_
+    , morph = M.fromList (map strictPair mor_) }
+  where
+    strictPair = Arr.first L.toStrict . Arr.second L.toStrict
 
 
 termQ :: Q Term
@@ -171,9 +171,9 @@ termQ = named "terminal" `joinR` do
   base_ <- first $ named "base" `joinR` first (node text)
   tag_  <- first $ (named "f" *> hasAttrVal "type" "tag") `joinR` first (node text)
   return $ Term
-    { orth = orth_
-    , base = base_
-    , tag = tag_ }
+    { orth = L.toStrict orth_
+    , base = L.toStrict base_
+    , tag = L.toStrict tag_ }
 
 
 childrenQ :: Q [(NID, IsHead)]
@@ -300,7 +300,7 @@ forest nodePred rootID dag =
 printChosen :: DAG -> IO ()
 printChosen dag =
   let t0 = simplify $ forest chosen 0 dag !! 0
-      simpLab = L.unpack . either cat orth . label
+      simpLab = T.unpack . either cat orth . label
   in  putStrLn . R.drawTree . fmap simpLab $ t0
 
 
