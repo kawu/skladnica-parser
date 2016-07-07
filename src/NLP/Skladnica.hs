@@ -25,7 +25,12 @@ module NLP.Skladnica
 
 -- * Conversion
 -- ** Tree
-, Tree (..)
+, Tree
+, Edge (..)
+, modifyEdge
+, modifyNode
+, modifyRootEdge
+, modifyRootNode
 , mapFst
 , simplify
 , purge
@@ -210,23 +215,65 @@ readTop path = parseTop <$> L.readFile path
 -------------------------------------------------
 
 
--- | A rose tree with labels assigned to nodes and edges.
-data Tree a b = Tree
-  { rootLabel :: a
-  , subForest :: [(Tree a b, b)] }
-  deriving (Show, Eq, Ord, Functor)
+-- | To distinguish edge labels from the node (child) labels.
+data Edge a b = Edge
+  { edgeLabel :: b
+    -- ^ Label assigned to the in-going edge
+  , nodeLabel :: a
+    -- ^ Label assigned to the node itself
+  } deriving (Show, Eq, Ord)
+
+
+-- | Modify edge label value.
+modifyEdge
+  :: (b -> c)
+  -> Edge a b
+  -> Edge a c
+modifyEdge = undefined
+
+
+-- | Modify node label value.
+modifyNode
+  :: (a -> b)
+  -> Edge a c
+  -> Edge b c
+modifyNode = undefined
+
+
+-- | Skladnica tree.
+type Tree a b = R.Tree (Edge a b)
+
+
+-- | Modify root's edge label value.
+modifyRootEdge
+  :: (b -> c)
+  -> Tree a b
+  -> Tree a c
+modifyRootEdge = undefined
+
+
+-- | Modify root's node label value.
+modifyRootNode
+  :: (a -> b)
+  -> Tree a c
+  -> Tree b c
+modifyRootNode = undefined
 
 
 -- | Map a function over labels attached to tree nodes.
 mapFst :: (a -> c) -> Tree a b -> Tree c b
-mapFst f t = Tree
-  { rootLabel = f (rootLabel t)
-  , subForest = map (Arr.first $ mapFst f) (subForest t) }
+mapFst f t = R.Node
+  { R.rootLabel =
+      let x = R.rootLabel t
+      in  x {nodeLabel = f (nodeLabel x)}
+  , R.subForest = map (mapFst f) (R.subForest t) }
 
 
 -- | Simplify a tree to a regular rose tree (i.e., from the containers package).
 simplify :: Tree a b -> R.Tree a
-simplify Tree{..} = R.Node rootLabel $ map (simplify . fst) subForest
+simplify R.Node{..} = R.Node
+  { R.rootLabel = (nodeLabel rootLabel)
+  , R.subForest = map simplify subForest }
 
 
 -- | Draw the tree.
@@ -236,14 +283,12 @@ drawTree = unlines . treeLines
 
 -- | Draw tree lines.
 treeLines :: Tree String String -> [String]
-treeLines Tree{..} =
-  rootLabel : concat
+treeLines R.Node{..} =
+  show rootLabel : concat
     [ map indent
-        (header y $ treeLines child)
-    | (child, y) <- subForest ]
+      (treeLines child)
+    | child <- subForest ]
   where
-    header h (x : xs) = ("[" ++ h ++ "] " ++ x) : xs
-    header h [] = ["[" ++ h ++ "]"]
     indent = ("  " ++)
 
 
@@ -277,23 +322,22 @@ forest
   -> DAG            -- ^ The DAG
   -> [Tree Node IsHead]
 forest nodePred rootID dag =
-  go rootID
+  go rootID HeadYes
   where
-    go i = do
+    go i isHead = do
       n@Node{..} <- maybeToList $ M.lookup i dag
       guard $ nodePred n
       if null children then do
-        return $ Tree n []
+        -- return $ Tree n []
+        return $ R.Node (Edge isHead n) []
       else do
         -- take one of the children alternatives
         childrenD <- children
         -- for the given children list, determine the
         -- corresponding forests
-        sub <- mapM (go . fst) childrenD
+        sub <- mapM (uncurry go) childrenD
         -- the result
-        return . Tree n
-          $ zip sub
-          $ map snd childrenD
+        return $ R.Node (Edge isHead n) sub
 
 
 -- | Print the chosen (simplified) tree represented in the DAG.
@@ -316,29 +360,29 @@ printChosen dag =
 --   } deriving (Show, Eq, Ord)
 
 
--------------------------------------------------
--- Utils
--------------------------------------------------
-
-
--- -- | Obtain non-terminal from source tree's root.
--- getNT' :: Tree Node b -> L.Text
--- getNT' t =
---   case label (rootLabel t) of
---     Left (NonTerm{..}) -> cat
---     _ -> error "getNT': invalid source tree"
---
---
--- -- | Extract the non-terminal from the label (raise an error if not possible).
--- labelNT :: Label -> NonTerm
--- labelNT x = case x of
---   Left x -> x
---   _ -> error "labelNT: not a non-terminal"
---
---
--- -- | Obtain non-terminal from source tree's root.
--- getTerm' :: R.Tree (Label, a) -> L.Text
--- getTerm' l =
---   case fst (R.rootLabel l) of
---     Right (Term{..}) -> base
---     _ -> error "getT': invalid source tree"
+-- -------------------------------------------------
+-- -- Utils
+-- -------------------------------------------------
+-- 
+-- 
+-- -- -- | Obtain non-terminal from source tree's root.
+-- -- getNT' :: Tree Node b -> L.Text
+-- -- getNT' t =
+-- --   case label (rootLabel t) of
+-- --     Left (NonTerm{..}) -> cat
+-- --     _ -> error "getNT': invalid source tree"
+-- --
+-- --
+-- -- -- | Extract the non-terminal from the label (raise an error if not possible).
+-- -- labelNT :: Label -> NonTerm
+-- -- labelNT x = case x of
+-- --   Left x -> x
+-- --   _ -> error "labelNT: not a non-terminal"
+-- --
+-- --
+-- -- -- | Obtain non-terminal from source tree's root.
+-- -- getTerm' :: R.Tree (Label, a) -> L.Text
+-- -- getTerm' l =
+-- --   case fst (R.rootLabel l) of
+-- --     Right (Term{..}) -> base
+-- --     _ -> error "getT': invalid source tree"
