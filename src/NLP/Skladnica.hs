@@ -27,10 +27,10 @@ module NLP.Skladnica
 -- ** Tree
 , Tree
 , Edge (..)
-, modifyEdge
+-- , modifyEdge
 , modifyNode
-, modifyRootEdge
-, modifyRootNode
+-- , modifyRootEdge
+-- , modifyRootNode
 , mapFst
 , simplify
 , purge
@@ -224,12 +224,12 @@ data Edge a b = Edge
   } deriving (Show, Eq, Ord)
 
 
--- | Modify edge label value.
-modifyEdge
-  :: (b -> c)
-  -> Edge a b
-  -> Edge a c
-modifyEdge = undefined
+-- -- | Modify edge label value.
+-- modifyEdge
+--   :: (b -> c)
+--   -> Edge a b
+--   -> Edge a c
+-- modifyEdge = undefined
 
 
 -- | Modify node label value.
@@ -237,27 +237,30 @@ modifyNode
   :: (a -> b)
   -> Edge a c
   -> Edge b c
-modifyNode = undefined
+modifyNode f e@Edge{..} =
+  e {nodeLabel = f nodeLabel}
 
 
 -- | Skladnica tree.
 type Tree a b = R.Tree (Edge a b)
 
 
--- | Modify root's edge label value.
-modifyRootEdge
-  :: (b -> c)
-  -> Tree a b
-  -> Tree a c
-modifyRootEdge = undefined
+-- -- | Modify root's edge label value.
+-- modifyRootEdge
+--   :: (b -> c)
+--   -> Tree a b
+--   -> Tree a c
+-- modifyRootEdge = undefined
 
 
--- | Modify root's node label value.
-modifyRootNode
-  :: (a -> b)
-  -> Tree a c
-  -> Tree b c
-modifyRootNode = undefined
+-- -- | Modify root's node label value.
+-- modifyRootNode
+--   :: (a -> b)
+--   -> Tree a c
+--   -> Tree b c
+-- modifyRootNode f R.Node{..} = R.Node
+--   { R.rootLabel = modifyNode f rootLabel
+--   , 
 
 
 -- | Map a function over labels attached to tree nodes.
