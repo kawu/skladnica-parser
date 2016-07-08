@@ -27,7 +27,7 @@ module NLP.Skladnica
 -- ** Tree
 , Tree
 , Edge (..)
--- , modifyEdge
+, modifyEdge
 , modifyNode
 -- , modifyRootEdge
 -- , modifyRootNode
@@ -224,12 +224,13 @@ data Edge a b = Edge
   } deriving (Show, Eq, Ord)
 
 
--- -- | Modify edge label value.
--- modifyEdge
---   :: (b -> c)
---   -> Edge a b
---   -> Edge a c
--- modifyEdge = undefined
+-- | Modify edge label value.
+modifyEdge
+  :: (b -> c)
+  -> Edge a b
+  -> Edge a c
+modifyEdge f e@Edge{..} =
+  e {edgeLabel = f edgeLabel}
 
 
 -- | Modify node label value.
