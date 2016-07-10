@@ -4,6 +4,7 @@
 {-# LANGUAGE TupleSections      #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE LambdaCase         #-}
 
 
 -- | Parsing the Skladnica constituency treebank.
@@ -276,7 +277,7 @@ mapFst f t = R.Node
 -- | Simplify a tree to a regular rose tree (i.e., from the containers package).
 simplify :: Tree a b -> R.Tree a
 simplify R.Node{..} = R.Node
-  { R.rootLabel = (nodeLabel rootLabel)
+  { R.rootLabel = nodeLabel rootLabel
   , R.subForest = map simplify subForest }
 
 
@@ -304,6 +305,40 @@ purge p t =
   in case p x of
     True  -> ts
     False -> [R.Node x ts]
+
+
+-- -- | Purge the nodes which satisfy the predicate.  However, if the discarded node
+-- -- contains more than one child, we take its first non-terminal trunk child and
+-- -- copy it to the place of the discarded node.  Finally, if all trunk children
+-- -- are terminals, we don't do anything.
+-- purge
+--   :: (a -> Bool)
+--      -- ^ Predicate which indicates nodes to be discarded
+--   -> (a -> Bool)
+--      -- ^ Predicate which tells wheter a given node is a trunk (head) non-terminal
+--   -> R.Tree a
+--   -> R.Tree a
+-- purge p isTrunkNT root =
+--   let x = R.rootLabel root
+--       ts = map (purge p isTrunkNT) (R.subForest root)
+--   in case p x of
+--     False -> R.Node x ts
+--     True -> case ts of
+--       [t] -> t                 -- discarding `x` node
+--       _ -> case findTrunkChild (map R.rootLabel ts) of
+--         Just y -> R.Node y ts  -- copying trunk non-terminal `y` in place of `x`
+--         -- Just _ -> error "Skladnica.purge: why not, let's fail..."
+--         Nothing -> error "Skladnica.purge: don't know what to do..."
+--   where
+--     -- find the first non-terminal trunk child
+--     findTrunkChild = \case
+--       [] -> Nothing
+--       (x:xs) -> x <$ guard (isTrunkNT x) <|> findTrunkChild xs
+-- --     isTrunkNT x = do
+-- --       guard $ edgeLabel x == HeadYes
+-- --       guard $ case label (nodeLabel x) of
+-- --         Left _nonTerm -> True
+-- --         Right _term -> False
 
 
 -------------------------------------------------
